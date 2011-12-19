@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleIdentifier</key>
+	<string>com.espes.MacTerrariaWrapper</string>
+	<key>CFBundleName</key>
+	<string>MacTerraria</string>
+	<key>CFBundleVersion</key>
+	<string>5</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>10.6</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>CFBundleIconFile</key>
+	<string>MacTerraria.icns</string>
+	<key>LSEnvironment</key>
+	<dict>
+		<key>MONO_IOMAP</key>
+		<string>all</string>
+		<key>MONO_ENV_OPTIONS</key>
+		<string>--gc=sgen --desktop</string>
+	</dict>
+</dict>
+</plist>
