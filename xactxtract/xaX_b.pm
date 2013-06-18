@@ -244,12 +244,22 @@ sub readByte {
 sub readWord {
 	my ($this, $position)=@_;
 	if ($DEBUG) { $this->isInFile($position); }
-	return unpack('S',substr($this->{DATA},$position,2));
+	return unpack('S<',substr($this->{DATA},$position,2));
+}
+sub readWordBE {
+	my ($this, $position)=@_;
+	if ($DEBUG) { $this->isInFile($position); }
+	return unpack('S>',substr($this->{DATA},$position,2));
 }
 sub readLong {
 	my ($this, $position)=@_;
 	if ($DEBUG) { $this->isInFile($position); }
-	return unpack('L',substr($this->{DATA},$position,4));
+	return unpack('L<',substr($this->{DATA},$position,4));
+}
+sub readLongBE {
+	my ($this, $position)=@_;
+	if ($DEBUG) { $this->isInFile($position); }
+	return unpack('L>',substr($this->{DATA},$position,4));
 }
 sub readString {
 	my ($this, $position, $len)=@_;
