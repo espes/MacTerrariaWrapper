@@ -147,8 +147,9 @@ sub readHeader	{
 	if (($dwSignature ne 'DNBW') && ($dwSignature ne 'WBND')) {
 		die "Fehler: $this->{XWBFNAME} (Signatur: $dwSignature ) ist keine XACT-Wavebank";
 	}
-	my $dwVersion=$this->readL(4);	
-	my $dwHeaderVersion=$this->readL(8);
+	my $bEndian = $dwSignature ne 'WBND';
+	my $dwVersion=$bEndian ? $this->readLBE(4) : $this->readL(4);	
+	my $dwHeaderVersion=$bEndian ? $this->readLBE(8) : $this->readL(8);
 	if (($dwVersion != 45) or ($dwHeaderVersion != 43)) {
 		print "WARNUNG: $this->{XWBFNAME} hat Toolversion $dwVersion und Formatversion $dwHeaderVersion.\n";
 		print "$skriptName unterstuetzt nur die Versionen 45 und 43\n";
@@ -157,25 +158,25 @@ sub readHeader	{
 	$this->{HD} = {
 	    dwVersion		       => $dwVersion,
 	    dwHeaderVersion	       => $dwHeaderVersion,
-	    segBankDataOff             => $this->readL(12),
-	    segBankDataLen             => $this->readL(16),
-	    segEntryMetaOff             => $this->readL(20),
-	    segEntryMetaLen             => $this->readL(24),
-	    segSeekTabOff             => $this->readL(28),
-	    segSeekTabLen             => $this->readL(32),
+	    segBankDataOff             => $bEndian ? $this->readLBE(12) : $this->readL(12),
+	    segBankDataLen             => $bEndian ? $this->readLBE(16) : $this->readL(16),
+	    segEntryMetaOff             => $bEndian ? $this->readLBE(20) : $this->readL(20),
+	    segEntryMetaLen             => $bEndian ? $this->readLBE(24) : $this->readL(24),
+	    segSeekTabOff             => $bEndian ? $this->readLBE(28) : $this->readL(28),
+	    segSeekTabLen             => $bEndian ? $this->readLBE(32) : $this->readL(32),
 	    anzRegions			=> 5,
 	    };
 	given($this->getHD('segBankDataOff')) {
 	when($_ == 52) { 
 	 	if ($DEBUG) {print "WAVEBANKHEADER hat korrekte Laenge\n";}
-	 	$this->setHD('segWaveDatOff',$this->readL(44));
-	 	$this->setHD('segWaveDatLen',$this->readL(48));
+	 	$this->setHD('segWaveDatOff',$bEndian ? $this->readLBE(44) : $this->readL(44));
+	 	$this->setHD('segWaveDatLen',$bEndian ? $this->readLBE(48) : $this->readL(48));
 	 	}	 	 
 	when($_ <  52) { print "WARNUNG: WAVEBANKHEADER zu klein\n"; continue}
 	when($_ >  43) {
 		$this->setHD('anzRegions',4);
-		$this->setHD('segWaveDatOff',$this->readL(36));
-	 	$this->setHD('segWaveDatLen',$this->readL(40));
+		$this->setHD('segWaveDatOff',$bEndian ? $this->readLBE(36) : $this->readL(36));
+	 	$this->setHD('segWaveDatLen',$bEndian ? $this->readLBE(40) : $this->readL(40));
 	}
 	
 	default	     { die "WAVEBANKHEADER von $this->{XWBFNAME} scheint defekt\n"}
@@ -201,16 +202,16 @@ sub readHeader	{
 	my $pos=$this->getHD('segBankDataOff');
 	if ($DEBUG) { print "WAVEBANKDATA:\n"; }
 
-	my $wbd_dwFlags=$this->readL($pos);
+	my $wbd_dwFlags=$bEndian ? $this->readLBE($pos) : $this->readL($pos);
 	$this->setHD('wbTyp', $wbd_dwFlags && WAVEBANK_TYPE_MASK);
 	my $szBankName=$this->readStr($pos+8,64);
 	if ($DEBUG) {  print "Wavebank Name: ",$szBankName,"\n"; }
 	$this->setHD('szBankName',$szBankName);
-	my $dwEntryCount=$this->readL($pos+4);
+	my $dwEntryCount=$bEndian ? $this->readLBE($pos+4) : $this->readL($pos+4);
 	$this->setHD('dwEntryCount',$dwEntryCount);
 	if ($DEBUG) { print "Anzahl Entries/Wavs: $dwEntryCount\n"; }
-	my $dwEntryMetaDataElementSize=$this->readL($pos+72);
-	my $dwEntryNameElementSize=$this->readL($pos+76);
+	my $dwEntryMetaDataElementSize=$bEndian ? $this->readLBE($pos+72) : $this->readL($pos+72);
+	my $dwEntryNameElementSize=$bEndian ? $this->readLBE($pos+76) : $this->readL($pos+76);
 	if ($DEBUG) { 
 		print "Laenge eines WAVEBANKENTRY in ENTRYMETADATA: $dwEntryMetaDataElementSize \n";
 		print "Laenge eines WAVENAMENS in ENTRYNAMES: $dwEntryNameElementSize \n";
@@ -233,10 +234,10 @@ sub readHeader	{
 	}
 	my $wdTotalLength=0;
 	for(my $i=0; $i<$dwEntryCount; $i++) {
-		($wdFlags[$i], $wdDur[$i])=$this->readENTRYdwFlags($pos);
-		($wdTyp[$i],$wdChan[$i],$wdRate[$i],$wdAlign[$i],$wdPCM16[$i])=$this->readMINIWAVEFORMAT($pos+4);
-		$wdOff[$i]=$this->readL($pos+8);
-		$wdLen[$i]=$this->readL($pos+12);
+		($wdFlags[$i], $wdDur[$i])=$bEndian ? $this->readENTRYdwFlagsBE($pos) : $this->readENTRYdwFlags($pos);
+		($wdTyp[$i],$wdChan[$i],$wdRate[$i],$wdAlign[$i],$wdPCM16[$i])=$bEndian ? $this->readMINIWAVEFORMATBE($pos+4) : $this->readMINIWAVEFORMAT($pos+4);
+		$wdOff[$i]=$bEndian ? $this->readLBE($pos+8) : $this->readL($pos+8);
+		$wdLen[$i]=$bEndian ? $this->readLBE($pos+12) : $this->readL($pos+12);
 		$pos+=$dwEntryMetaDataElementSize;
 		if ($DEBUG) { printf "%4d %4d %9d", $i,$wdFlags[$i],$wdDur[$i]; }
 		if ($DEBUG) { 
@@ -396,9 +397,22 @@ sub readENTRYdwFlags {
 	return @res;
 }
 
+sub readENTRYdwFlagsBE {
+	my ($this,$position)=@_;
+	my @res= $this->readMaskedLongBE($position,4,28);
+	return @res;
+}
+
 sub readMINIWAVEFORMAT {
 	my ($this,$position)=@_;
 	my @res= $this->readMaskedLong($position,2,3,18,8,1);
+
+	return @res;	
+	}
+
+sub readMINIWAVEFORMATBE {
+	my ($this,$position)=@_;
+	my @res= $this->readMaskedLongBE($position,2,3,18,8,1);
 
 	return @res;	
 	}
@@ -424,12 +438,37 @@ sub readMaskedLong {
 	}
 	return @result;	
 }
+sub readMaskedLongBE {
+	my ($this,$position, @bitlen)=@_;
+	my $num=$#bitlen + 1;
+	my @ch;
+	for(my $i=0; $i < 4; $i++) {
+		$ch[$i]=$this->readStr($position+3-$i,1);
+		$ch[$i]=unpack('b8',$ch[$i]);
+	}
+	my $binary=join("",@ch);
+	my @result;
+	my $bitpos=0;
+	for (my $i=0; $i<$num; $i++) {
+		$result[$i]=substr($binary,$bitpos, $bitlen[$i]);
+		$bitpos+=$bitlen[$i];
+		$result[$i]=reverse($result[$i]);
+		
+		my $bh= new Math::BigInt '0b'.$result[$i];
+		$result[$i]=$bh->as_int;
+	}
+	return @result;	
+}
 sub readB {
 	$_[0]->SUPER::readByte($_[1]);   }
 sub readW {
 	$_[0]->SUPER::readWord($_[1]);   }
+sub readWBE {
+	$_[0]->SUPER::readWordBE($_[1]);   }
 sub readL {	
 	$_[0]->SUPER::readLong($_[1]);   }
+sub readLBE {	
+	$_[0]->SUPER::readLongBE($_[1]);   }
 sub readStr {
 	$_[0]->SUPER::readString($_[1],$_[2]);   }
 
